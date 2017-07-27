@@ -7,13 +7,19 @@ from django.shortcuts import render
 from django.shortcuts import render, redirect
 
 
-from forms import SignUpForm, LoginForm,PostForm
+from forms import SignUpForm, LoginForm,PostForm,LikeForm, CommentForm
 from datetime import datetime
-from models import UserModel, SessionToken,PostModel
-from django.http import HttpResponse
+from models import UserModel, SessionToken,PostModel,LikeModel, CommentModel
+
 from django.contrib.auth.hashers import make_password, check_password
+from datetime import timedelta
+from django.utils import timezone
 from instaclone.settings import BASE_DIR
 from imgurpython import ImgurClient
+
+
+
+
 
 # Create your views here.
 
@@ -22,12 +28,11 @@ def signup_view(request):
        form = SignUpForm(request.POST)
        print request.body
        if form.is_valid():
-           print "ABCD"
            username = form.cleaned_data['username']
-           name = form.cleaned_data['name']
            email = form.cleaned_data['email']
            password = form.cleaned_data['password']
-           user = UserModel(name=name, password=make_password(password), email=email, username=username)
+           print 'Here'
+           user = UserModel( password=make_password(password), email=email, username=username)
            user.save()
        return render(request, 'success.html')
    elif request.method == "GET":
@@ -114,19 +119,68 @@ def feed_view(request):
 
         posts = PostModel.objects.all().order_by('created_on')
 
+        for post in posts:
+            existing_like = LikeModel.objects.filter(post_id=post.id, user=user).first()
+            if existing_like:
+                post.has_liked = True
+
+
         return render(request, 'feed.html', {'posts': posts})
     else:
 
         return redirect('/login/')
 
 
+def like_view(request):
+    user = check_validation(request)
+    if user and request.method == 'POST':
+        form = LikeForm(request.POST)
+        if form.is_valid():
+            post_id = form.cleaned_data.get('post').id
+            existing_like = LikeModel.objects.filter(post_id=post_id, user=user).first()
+            if not existing_like:
+                LikeModel.objects.create(post_id=post_id, user=user)
+            else:
+                existing_like.delete()
+            return redirect('/feed/')
+    else:
+        return redirect('/login/')
+#from paralleldots import config
+#from paralleldots.config import set_api_key,get_api_key
+
+def comment_view(request):
+ #   api_key = "R8BHcxy8Dv01h5Blh5BVBLcvxNy2tD6JRqtlSkwzXVdfow"
+  #  get_api_key()
+
+   # url = "http://apis.paralleldots.com/sentiment"
+    user = check_validation(request)
+    if user and request.method == 'POST':
+       form = CommentForm(request.POST)
+
+       if  form.is_valid():
+            post_id = form.cleaned_data.get('post').id
+            comment_text = form.cleaned_data.get('comment_text')
+         #   r = requests.get(url, params={"apikey": api_key, "comment": comment_text})
+          #  print r
+            comment = CommentModel.objects.create(user=user, post_id=post_id, comment_text=comment_text)
+            comment.save()
+            return redirect('/feed/')
+       else:
+            return redirect('/feed/')
+    else:
+        return redirect('/login')
+
+
+# For validating the session
 def check_validation(request):
     if request.COOKIES.get('session_token'):
         session = SessionToken.objects.filter(session_token=request.COOKIES.get('session_token')).first()
         if session:
-            return session.user
+            time_to_live = session.created_on + timedelta(days=1)
+            if time_to_live > timezone.now():
+                return session.user
     else:
-            return None
+        return None
 
 
 
