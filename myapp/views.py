@@ -16,6 +16,10 @@ from datetime import timedelta
 from django.utils import timezone
 from instaclone.settings import BASE_DIR
 from imgurpython import ImgurClient
+from paralleldots.config import get_api_key
+import requests
+import json
+
 
 
 
@@ -145,14 +149,12 @@ def like_view(request):
             return redirect('/feed/')
     else:
         return redirect('/login/')
-#from paralleldots import config
-#from paralleldots.config import set_api_key,get_api_key
 
 def comment_view(request):
- #   api_key = "R8BHcxy8Dv01h5Blh5BVBLcvxNy2tD6JRqtlSkwzXVdfow"
-  #  get_api_key()
+    api_key = "R8BHcxy8Dv01h5Blh5BVBLcvxNy2tD6JRqtlSkwzXVdfow"
 
-   # url = "http://apis.paralleldots.com/sentiment"
+
+    url = "http://apis.paralleldots.com/sentiment"
     user = check_validation(request)
     if user and request.method == 'POST':
        form = CommentForm(request.POST)
@@ -160,8 +162,8 @@ def comment_view(request):
        if  form.is_valid():
             post_id = form.cleaned_data.get('post').id
             comment_text = form.cleaned_data.get('comment_text')
-         #   r = requests.get(url, params={"apikey": api_key, "comment": comment_text})
-          #  print r
+            r = requests.get(url, params={"apikey": api_key, "comment": comment_text})
+            print r
             comment = CommentModel.objects.create(user=user, post_id=post_id, comment_text=comment_text)
             comment.save()
             return redirect('/feed/')
