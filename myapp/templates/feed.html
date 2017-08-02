@@ -43,19 +43,25 @@
             color: saddlebrown;
             font-size: 35px;
     }
-        p {
-            font-size: 22px;
-             color: saddlebrown;
-     }
+
+
 </style>
 <body>
-<form method="post"  action="/post/">
+<form method="POST"  action="/post/">
         {% csrf_token%}
-       <input type="submit" class="btn-default btn"  value="Create post">
+
+        <input type="submit" class="btn btn-default" value="create a post">
+
+</form>
+
+<form method="POST"  action="/logout/">
+        {% csrf_token%}
+
+        <input type="submit" class="btn btn-default" value="Logout">
 </form>
 <h1>Feeds</h1>
 {% for post in posts %}
-<p>posts</p>
+
 <h3>
     Posted by : {{post.user.username}}
 </h3>
@@ -91,11 +97,23 @@
         <div>
             {% for comment in post.comments %}
                 <p><b>{{ comment.user.username }} [{{ comment.created_on }}]:</b> {{ comment.comment_text }}</p>
-            {% endfor %}
-        </div>
-        <hr>
 
-    {% endfor %}
+              <form method="POST" action="/upvote/">
+              {% csrf_token %}
+
+              <input type="hidden" name="id" value="{{ comment.id }}">
+
+              <input type="submit" class="btn btn-default" value="Upvote">
+
+          </form><span>Upvotes: {{comment.upvote_num}}</span>
+
+      {% endfor %}
+
+      </div>
+</div>
+ <hr />
+  {% endfor %}
+
+
 </body>
 </html>
-
